@@ -2,7 +2,7 @@
 #define BYTE_SIZE 256
 char *buffer_push_char(char *buffer, char ch);
 char **split_into(const char *str, char delim);
-#ifdef GREYS_UTILS
+#ifdef YUIS_UTILS
 #include <string.h>
 #include <stdlib.h>
 char *buffer_push_char(char *buffer, char ch) {
