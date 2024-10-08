@@ -35,4 +35,4 @@ char **split_into(const char *str, char delim) {
     }
     return result;
 }
-#endif /* ifdef GREYS_UTILS */
+#endif /* ifdef YUIS_UTILS */
