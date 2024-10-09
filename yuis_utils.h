@@ -2,9 +2,23 @@
 #define BYTE_SIZE 256
 char *buffer_push_char(char *buffer, char ch);
 char **split_into(const char *str, char delim);
+char *read_file(const char *filename);
 #ifdef YUIS_UTILS
 #include <string.h>
 #include <stdlib.h>
+char *read_file(const char *filename){
+    FILE *f=fopen(filename,"rb");
+    fseek(f,0,SEEK_END);
+    size_t fsz=ftell(f);
+    fseek(f,0,SEEK_SET);
+    char *buffer=malloc(fsz + 1);
+    int r=fread(buffer,1,fsz,f);
+    if (r==0) {
+       fprintf(stderr, "Error reading file\n"); 
+       return NULL;
+    }
+    return buffer;
+}
 char *buffer_push_char(char *buffer, char ch) {
     size_t idx = strlen(buffer);
     if (ch == '\0') {
