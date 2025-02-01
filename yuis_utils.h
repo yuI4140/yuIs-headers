@@ -1,55 +1,115 @@
 #pragma once
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #define BYTE_SIZE 256
 #define YUIS_MALLOC malloc
+#define YUIS_DEFAULT_FREE
 char *buffer_push_char(char *buffer, char ch);
 char **split_into(const char *str, char delim);
 char *read_file(const char *filename);
+
 #ifdef YUIS_UTILS
-#include <string.h>
-#include <stdlib.h>
-char *read_file(const char *filename){
-    FILE *f=fopen(filename,"rb");
-    fseek(f,0,SEEK_END);
-    size_t fsz=ftell(f);
-    fseek(f,0,SEEK_SET);
-    char *buffer=YUIS_MALLOC(fsz + 1);
-    int r=fread(buffer,1,fsz,f);
-    if (r==0) {
-       fprintf(stderr, "Error reading file\n"); 
-       return NULL;
+
+char *read_file(const char *filename) {
+    FILE *f = fopen(filename, "rb");
+    if (!f) {
+        perror("Error opening file");
+        return NULL;
     }
-    return buffer;
-}
-char *buffer_push_char(char *buffer, char ch) {
-    size_t idx = strlen(buffer);
-    if (ch == '\0') {
-        buffer[0] = ch;
-    } else {
-        buffer[idx] = ch;
-        buffer[idx + 1] = '\0';
+    
+    fseek(f, 0, SEEK_END);
+    size_t fsz = ftell(f);
+    rewind(f);
+    
+    char *buffer = YUIS_MALLOC(fsz + 1);
+    if (!buffer) {
+        fclose(f);
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
     }
+    
+    size_t r = fread(buffer, 1, fsz, f);
+    fclose(f);
+    
+    if (r != fsz) {
+#ifndef YUIS_DEFAULT_FREE
+        free(buffer);
+#endif
+        fprintf(stderr, "Error reading file\n"); 
+        return NULL;
+    }
+    
+    buffer[fsz] = '\0';
     return buffer;
 }
 
-// Function to split a string into an array of strings based on a delimiter
-char **split_into(const char *str, char delim) {
-    char *buffer = YUIS_MALLOC(BYTE_SIZE);
-    char **result = YUIS_MALLOC(BYTE_SIZE * 4096);
-    size_t idx_str = 0, idx_res = 0;
-    while (1) {
-        if (str[idx_str] == '\0') {
-            result[idx_res] = strdup(buffer);
-            break;
-        } else if (str[idx_str] == delim) {
-            result[idx_res++] = strdup(buffer);
-            buffer_push_char(buffer, '\0');
-            idx_str++;
-        } else {
-            buffer_push_char(buffer, str[idx_str++]);
-        }
+char *buffer_push_char(char *buffer, char ch) {
+    size_t len = strlen(buffer);
+    char *new_buffer = realloc(buffer, len + 2);
+    if (!new_buffer) {
+        fprintf(stderr, "Memory reallocation failed\n");
+        return buffer;
     }
+    
+    new_buffer[len] = ch;
+    new_buffer[len + 1] = '\0';
+    return new_buffer;
+}
+
+char **split_into(const char *str, char delim) {
+    size_t cap = 10, count = 0;
+    char **result = YUIS_MALLOC(cap * sizeof(char *));
+    if (!result) return NULL;
+    
+    char *buffer = YUIS_MALLOC(BYTE_SIZE);
+    if (!buffer) {
+#ifndef YUIS_DEFAULT_FREE
+        free(result);
+#endif
+        return NULL;
+    }
+    
+    size_t idx_str = 0, idx_buf = 0;
+    while (1) {
+        if (str[idx_str] == delim || str[idx_str] == '\0') {
+            buffer[idx_buf] = '\0';
+            result[count++] = strdup(buffer);
+            if (!result[count - 1]) {
+                fprintf(stderr, "Memory allocation failed\n");
+#ifndef YUIS_DEFAULT_FREE
+                free(buffer);
+                for (size_t i = 0; i < count - 1; i++) free(result[i]);
+                free(result);
+#endif
+                return NULL;
+            }
+            idx_buf = 0;
+            if (str[idx_str] == '\0') break;
+            
+            if (count >= cap) {
+                cap *= 2;
+                char **temp = realloc(result, cap * sizeof(char *));
+                if (!temp) {
+                    fprintf(stderr, "Memory reallocation failed\n");
+#ifndef YUIS_DEFAULT_FREE
+                    for (size_t i = 0; i < count; i++) free(result[i]);
+                    free(result);
+#endif
+                    return NULL;
+                }
+                result = temp;
+            }
+        } else {
+            buffer[idx_buf++] = str[idx_str];
+        }
+        idx_str++;
+    }
+#ifndef YUIS_DEFAULT_FREE
+    free(buffer);
+#endif
     return result;
 }
+
 #endif /* ifdef YUIS_UTILS */
