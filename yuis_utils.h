@@ -1,5 +1,6 @@
 #pragma once
 #include <stdlib.h>
+#include <stdio.h>
 #define BYTE_SIZE 256
 #define YUIS_MALLOC malloc
 char *buffer_push_char(char *buffer, char ch);
@@ -33,7 +34,7 @@ char *buffer_push_char(char *buffer, char ch) {
 }
 
 // Function to split a string into an array of strings based on a delimiter
-char **split_into(const char *st,r, char delim) {
+char **split_into(const char *str, char delim) {
     char *buffer = YUIS_MALLOC(BYTE_SIZE);
     char **result = YUIS_MALLOC(BYTE_SIZE * 4096);
     size_t idx_str = 0, idx_res = 0;
